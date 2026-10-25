@@ -94,3 +94,50 @@
   .vault-wheel, .vault-door, .vault-glow { transition: none; }
   .scene-rays, .lantern-glow { animation: none; }
 }
+
+/* ---------- Sealing page: letter goes into the envelope ---------- */
+
+/* 1. letter slides down in  2. open flap folds away  3. closed flap folds down  4. wax seal stamps */
+.seal-letter { transition: transform 0.9s ease-in; }
+.sealing .seal-letter { transform: translateY(215px); }
+.seal-flap-open { transform-box: fill-box; transform-origin: bottom; transition: transform 0.4s ease-in 0.9s; }
+.sealing .seal-flap-open { transform: scaleY(0); }
+.seal-flap-closed { transform-box: fill-box; transform-origin: top; transform: scaleY(0); transition: transform 0.45s ease-out 1.3s; }
+.sealing .seal-flap-closed { transform: scaleY(1); }
+.wax-stamp { transform-box: fill-box; transform-origin: center; opacity: 0; }
+.sealing .wax-stamp { animation: stamp 0.55s cubic-bezier(0.3, 1.6, 0.5, 1) 1.85s forwards; }
+@keyframes stamp {
+  0% { opacity: 0; transform: scale(2.8); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+/* Golden swirl around the envelope while Solana records it */
+.orbit { animation: spin-slow 3.5s linear infinite; }
+.orbit-reverse { animation: spin-slow 5s linear infinite reverse; }
+
+/* Envelope glows when it's done */
+@keyframes glow-pulse {
+  0%, 100% { filter: drop-shadow(0 0 18px rgba(255, 210, 0, 0.45)); }
+  50% { filter: drop-shadow(0 0 38px rgba(255, 210, 0, 0.85)); }
+}
+.glow-pulse { animation: glow-pulse 2s ease-in-out infinite; }
+
+/* Polaroids drift gently */
+@keyframes float {
+  0%, 100% { transform: translateY(0) rotate(var(--tilt)); }
+  50% { transform: translateY(-12px) rotate(var(--tilt)); }
+}
+.float-photo { animation: float 4s ease-in-out infinite; }
+
+/* Sparkles twinkle */
+@keyframes twinkle {
+  0%, 100% { opacity: 0.15; transform: scale(0.7); }
+  50% { opacity: 1; transform: scale(1.1); }
+}
+.twinkle { animation: twinkle 2.4s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .seal-letter, .seal-flap-open, .seal-flap-closed { transition: none; }
+  .sealing .wax-stamp { animation: none; opacity: 1; }
+  .orbit, .orbit-reverse, .glow-pulse, .float-photo, .twinkle { animation: none; }
+}
