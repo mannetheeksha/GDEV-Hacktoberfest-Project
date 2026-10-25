@@ -4,24 +4,40 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import type { OpenedCapsule } from "@/lib/capsules";
 import { classYear } from "@/lib/badge";
+import Unsealing, { type Check, type Phase } from "./Unsealing";
+import Confetti from "./Confetti";
+
+const SCAN_AT_LEAST_MS = 2200; // let the fingerprint scan play even if Solana answers fast
+const SHOW_RESULT_MS = 1300;   // time to read ✅ before the envelope opens
+const OPENING_MS = 2300;       // seal cracks → flap opens → letter slides out
 
 export default function OpenCapsule({
   id,
   author,
   secretQuestion,
+  unlockDate,
 }: {
   id: string;
   author: string;
   secretQuestion?: string;
+  unlockDate: string;
 }) {
   const [answer, setAnswer] = useState("");
   const [error, setError] = useState("");
   const [checking, setChecking] = useState(false);
+  const [skipToGrad, setSkipToGrad] = useState<boolean | null>(null); // null until we've read sessionStorage
   const [capsule, setCapsule] = useState<OpenedCapsule | null>(null);
-  const [check, setCheck] = useState<{ verified?: boolean; sealedAt?: string; reason?: string; error?: string } | null>(null);
-
+  const [check, setCheck] = useState<Check | null>(null);
+  const [phase, setPhase] = useState<Phase | "done">("scanning");
   const [badge, setBadge] = useState<{ mintAddress?: string; explorerUrl?: string; error?: string } | null>(null);
+  const scanStartedAt = useRef(0);
   const startedMint = useRef(false);
+
+  const stillLocked = new Date(unlockDate).getTime() > Date.now() && skipToGrad === false;
+
+  useEffect(() => {
+    setSkipToGrad(sessionStorage.getItem("skipToGrad") === "true");
+  }, []);
 
   async function tryOpen(answerToSend: string) {
     setChecking(true);
@@ -29,7 +45,7 @@ export default function OpenCapsule({
     const res = await fetch("/api/open", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id, answer: answerToSend }),
+      body: JSON.stringify({ id, answer: answerToSend, skipToGrad }),
     });
     const data = await res.json();
     setChecking(false);
@@ -37,8 +53,15 @@ export default function OpenCapsule({
       setError(data.error);
       return;
     }
+    scanStartedAt.current = Date.now();
     setCapsule(data);
   }
+
+  // Older capsules have no secret question — open them straight away
+  useEffect(() => {
+    if (!secretQuestion && skipToGrad !== null && !stillLocked) tryOpen("");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [skipToGrad]);
 
   // Once unlocked, re-check the capsule's fingerprint against Solana
   useEffect(() => {
@@ -52,6 +75,18 @@ export default function OpenCapsule({
       .then(setCheck)
       .catch(() => setCheck({ error: "Couldn't reach Solana — refresh to try again." }));
   }, [capsule, id]);
+
+  // Opening scene timeline: scanning → result (✅/⚠️) → opening (envelope) → done (letter)
+  useEffect(() => {
+    if (!check) return;
+    const waitForScan = Math.max(0, SCAN_AT_LEAST_MS - (Date.now() - scanStartedAt.current));
+    const timers = [
+      setTimeout(() => setPhase("result"), waitForScan),
+      setTimeout(() => setPhase("opening"), waitForScan + SHOW_RESULT_MS),
+      setTimeout(() => setPhase("done"), waitForScan + SHOW_RESULT_MS + OPENING_MS),
+    ];
+    return () => timers.forEach(clearTimeout);
+  }, [check]);
 
   // Only untouched capsules earn a badge: mint it once the ✅ check passes
   useEffect(() => {
@@ -67,11 +102,26 @@ export default function OpenCapsule({
       .catch(() => setBadge({ error: "Testudo dropped the badge — refresh to try again." }));
   }, [check, id]);
 
-  // Older capsules have no secret question — open them straight away
-  useEffect(() => {
-    if (!secretQuestion) tryOpen("");
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // ---------- Not graduation day yet ----------
+  if (stillLocked && !capsule) {
+    const daysLeft = Math.ceil((new Date(unlockDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+    return (
+      <div className="min-h-screen py-12 px-4 flex items-center" style={{ background: "#fdf8f0" }}>
+        <div className="max-w-md mx-auto w-full text-center bg-white rounded-3xl p-8 shadow-md border border-gray-100">
+          <div className="text-6xl mb-4">🔒</div>
+          <h1 className="text-2xl font-bold mb-2" style={{ color: "#E21833" }}>Not graduation day yet!</h1>
+          <p className="text-gray-500">
+            {author}&apos;s capsule unlocks on{" "}
+            {new Date(unlockDate).toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" })}
+            {" "}— {daysLeft} days to go. Testudo is still guarding it. 🐢
+          </p>
+          <Link href="/vault" className="mt-6 inline-block underline" style={{ color: "#E21833" }}>
+            ← Back to vault
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   // ---------- Locked: ask the secret question ----------
   if (!capsule) {
@@ -108,7 +158,7 @@ export default function OpenCapsule({
               {error && <p className="text-sm mt-3" style={{ color: "#dc2626" }}>{error}</p>}
               <button
                 type="submit"
-                disabled={checking}
+                disabled={checking || skipToGrad === null}
                 className="w-full mt-5 py-3 rounded-full font-bold text-lg shadow-md transition-transform hover:scale-105 active:scale-95 disabled:opacity-60"
                 style={{ background: "#E21833", color: "white" }}
               >
@@ -124,6 +174,11 @@ export default function OpenCapsule({
     );
   }
 
+  // ---------- Opening scene ----------
+  if (phase !== "done") {
+    return <Unsealing phase={phase} check={check} hash={capsule.hash} />;
+  }
+
   // ---------- Unlocked: show everything ----------
   return (
     <div className="min-h-screen py-12 px-4" style={{ background: "#fdf8f0" }}>
@@ -135,17 +190,9 @@ export default function OpenCapsule({
         </Link>
 
         {/* Verification banner */}
-        {!check ? (
+        {check?.verified ? (
           <div
-            className="rounded-2xl px-5 py-3 mb-6 flex items-center gap-3 text-sm font-semibold animate-pulse"
-            style={{ background: "#fff7cc", color: "#92400e" }}
-          >
-            <span className="text-lg">🔍</span>
-            Asking Solana if this capsule is untouched...
-          </div>
-        ) : check.verified ? (
-          <div
-            className="rounded-2xl px-5 py-3 mb-6 flex items-center gap-3 text-sm font-semibold"
+            className="fade-up rounded-2xl px-5 py-3 mb-6 flex items-center gap-3 text-sm font-semibold"
             style={{ background: "#dcfce7", color: "#15803d" }}
           >
             <span className="text-lg">✅</span>
@@ -157,9 +204,9 @@ export default function OpenCapsule({
               </a>
             </span>
           </div>
-        ) : check.error ? (
+        ) : check?.error ? (
           <div
-            className="rounded-2xl px-5 py-3 mb-6 flex items-center gap-3 text-sm font-semibold"
+            className="fade-up rounded-2xl px-5 py-3 mb-6 flex items-center gap-3 text-sm font-semibold"
             style={{ background: "#f3f4f6", color: "#4b5563" }}
           >
             <span className="text-lg">📡</span>
@@ -167,16 +214,16 @@ export default function OpenCapsule({
           </div>
         ) : (
           <div
-            className="rounded-2xl px-5 py-3 mb-6 flex items-center gap-3 text-sm font-semibold"
+            className="fade-up rounded-2xl px-5 py-3 mb-6 flex items-center gap-3 text-sm font-semibold"
             style={{ background: "#fef2f2", color: "#dc2626" }}
           >
             <span className="text-lg">⚠️</span>
-            Tampered! {check.reason}
+            Tampered! {check?.reason}
           </div>
         )}
 
         {/* Author + date */}
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 mb-5">
+        <div className="fade-up bg-white rounded-2xl p-6 shadow-sm border border-gray-100 mb-5" style={{ animationDelay: "0.1s" }}>
           <div className="flex items-center gap-3">
             <div
               className="w-12 h-12 rounded-full flex items-center justify-center text-xl font-bold"
@@ -196,7 +243,7 @@ export default function OpenCapsule({
         </div>
 
         {/* Letter */}
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 mb-5">
+        <div className="fade-up bg-white rounded-2xl p-6 shadow-sm border border-gray-100 mb-5" style={{ animationDelay: "0.2s" }}>
           <h2 className="font-bold text-gray-700 mb-3 flex items-center gap-2">
             <span>📜</span> Their Letter
           </h2>
@@ -207,7 +254,7 @@ export default function OpenCapsule({
 
         {/* Photos */}
         {(capsule.photoUrls.some(Boolean) || capsule.photoCaptions.some(Boolean)) && (
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 mb-5">
+          <div className="fade-up bg-white rounded-2xl p-6 shadow-sm border border-gray-100 mb-5" style={{ animationDelay: "0.3s" }}>
             <h2 className="font-bold text-gray-700 mb-3 flex items-center gap-2">
               <span>📷</span> Their Photos
             </h2>
@@ -233,8 +280,8 @@ export default function OpenCapsule({
         {/* Semester notes */}
         {capsule.notes && (
           <div
-            className="rounded-2xl p-6 shadow-sm mb-5 border"
-            style={{ background: "#fffbeb", borderColor: "#FFD200" }}
+            className="fade-up rounded-2xl p-6 shadow-sm mb-5 border"
+            style={{ background: "#fffbeb", borderColor: "#FFD200", animationDelay: "0.4s" }}
           >
             <h2 className="font-bold mb-3 flex items-center gap-2" style={{ color: "#92400e" }}>
               <span>📝</span> Semester Notes
@@ -247,8 +294,8 @@ export default function OpenCapsule({
 
         {/* Badge NFT */}
         {check?.verified && !badge && (
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 text-center animate-pulse">
-            <div className="text-5xl mb-3">🎓</div>
+          <div className="fade-up bg-white rounded-2xl p-6 shadow-sm border border-gray-100 text-center" style={{ animationDelay: "0.5s" }}>
+            <div className="text-5xl mb-3 animate-bounce">🎓</div>
             <p className="font-semibold text-gray-700">Minting your Class of {classYear(capsule.unlockDate)} badge on Solana...</p>
           </div>
         )}
@@ -258,23 +305,26 @@ export default function OpenCapsule({
           </div>
         )}
         {badge?.mintAddress && (
-          <div className="bg-white rounded-2xl p-6 shadow-sm border-2 text-center" style={{ borderColor: "#FFD200" }}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={`/api/badge/${classYear(capsule.unlockDate)}`} alt="Terp badge" className="w-48 h-48 mx-auto mb-3 rounded-full" />
-            <h2 className="font-bold text-gray-800 text-lg mb-1">Terp Class of {classYear(capsule.unlockDate)} badge is yours! 🎉</h2>
-            <p className="text-sm text-gray-500 mb-4">
-              Sent to {capsule.walletAddress.slice(0, 4)}...{capsule.walletAddress.slice(-4)}. Find it in Phantom (Devnet) → Collectibles.
-            </p>
-            <a
-              href={badge.explorerUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-block px-6 py-2 rounded-full text-sm font-semibold transition-opacity hover:opacity-80"
-              style={{ background: "#FFD200", color: "#1a1a1a" }}
-            >
-              View badge on Explorer ↗
-            </a>
-          </div>
+          <>
+            <Confetti />
+            <div className="pop-in bg-white rounded-2xl p-6 shadow-md border-2 text-center" style={{ borderColor: "#FFD200" }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={`/api/badge/${classYear(capsule.unlockDate)}`} alt="Terp badge" className="w-48 h-48 mx-auto mb-3 rounded-full" />
+              <h2 className="font-bold text-gray-800 text-lg mb-1">Terp Class of {classYear(capsule.unlockDate)} badge is yours! 🎉</h2>
+              <p className="text-sm text-gray-500 mb-4">
+                Sent to {capsule.walletAddress.slice(0, 4)}...{capsule.walletAddress.slice(-4)} on Solana.
+              </p>
+              <a
+                href={badge.explorerUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-block px-6 py-2 rounded-full text-sm font-semibold transition-opacity hover:opacity-80"
+                style={{ background: "#FFD200", color: "#1a1a1a" }}
+              >
+                View badge on Explorer ↗
+              </a>
+            </div>
+          </>
         )}
 
       </div>

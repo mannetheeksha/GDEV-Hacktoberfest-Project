@@ -32,6 +32,7 @@ export default async function CapsulePage({
       id={capsule.id}
       author={capsule.author}
       secretQuestion={capsule.secretQuestion}
+      unlockDate={capsule.unlockDate}
     />
   );
 }
