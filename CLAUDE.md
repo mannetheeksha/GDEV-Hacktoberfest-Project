@@ -21,6 +21,8 @@ Students write a letter to their future selves (or to next year's freshmen), sea
 - Photo storage: uploaded images are saved to `public/uploads/` (served at `/uploads/<file>`). Only the file path goes in the JSON. Images only, max 5 MB each.
 - Solana: **devnet only**. `@solana/web3.js` for memo transactions. Metaplex Umi + `mpl-token-metadata` for the NFT.
 - A server keypair pays for everything. Its secret key lives in `.env.local` as `SOLANA_SECRET_KEY` (JSON array). Users only paste a wallet address — no wallet-connect code.
+- `@solana/web3.js` is pinned to v1 (Metaplex Umi needs it).
+- Badge picture + NFT info are uploaded to IPFS via Pinata (`PINATA_JWT` in `.env.local`), once per class year; links cached in `data/badges.json`.
 - No smart contracts / no Rust.
 - No AI features.
 - Never commit `.env.local`.
@@ -49,7 +51,7 @@ type Capsule = {
 1. `/` — Landing: title, one-line pitch, "Write your capsule" button.
 2. `/write` — Form: name, wallet address, letter, semester notes, 3 photo upload sections (each: an image picker with a preview + a caption box; all optional), unlock date, secret question (dropdown of UMD questions or "Write my own") + answer. Button: "Seal my capsule".
 3. `/sealing` — Animated wax-seal / envelope closing. Calls `/api/seal`, then shows "Sealed on Solana" with an Explorer link, then a button to the vault.
-4. `/vault` — Your wallet is your identity: asks for a wallet address (remembered in localStorage, auto-set after sealing) and lists only that wallet's capsules. Locked: countdown to unlock date. Unlocked: "Open" button. Top-right: "⏩ Skip to Graduation" toggle (stored in localStorage) that treats all as unlocked.
+4. `/vault` — Your wallet is your identity: asks for a wallet address (remembered in localStorage, auto-set after sealing) and lists only that wallet's capsules. Locked: countdown to unlock date. Unlocked: "Open" button. Top-right: "⏩ Skip to Graduation" toggle (starts OFF; remembered only for the current tab via sessionStorage) that treats all as unlocked.
 5. `/capsule/[id]` — Locked view asks the secret question → `/api/open`. Once unlocked: calls `/api/verify` → shows verified badge or "⚠️ tampered", reveals letter + notes + the uploaded photos with their captions, then calls `/api/mint-badge` and shows the badge image + Explorer link.
 
 ## API routes
@@ -59,7 +61,7 @@ type Capsule = {
 - `POST /api/upload` → form-data with one `file` → saves it to `public/uploads/` with a random name → `{ url }`
 - `POST /api/seal` → saves capsule, hashes it, sends a devnet memo tx containing `TERP-CAPSULE:<hash>` → `{ id, sealTx, explorerUrl }`
 - `POST /api/verify` → `{ id }` → re-hashes, reads the memo from `sealTx` on chain, compares → `{ verified, sealedAt }`
-- `POST /api/mint-badge` → `{ id }` → mints NFT (name "Terp Class of <year>", image from `/api/badge/<year>`) to the capsule's wallet → `{ mintAddress, explorerUrl }`
+- `POST /api/mint-badge` → `{ id }` → mints NFT (name "Terp Class of <year>", PNG of `/api/badge/<year>` on IPFS); only called after verify passes; never mints twice for one capsule to the capsule's wallet → `{ mintAddress, explorerUrl }`
 - Explorer links use `?cluster=devnet`.
 
 ## Design

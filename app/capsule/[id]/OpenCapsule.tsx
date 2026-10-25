@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import type { OpenedCapsule } from "@/lib/capsules";
 import { classYear } from "@/lib/badge";
@@ -19,6 +19,9 @@ export default function OpenCapsule({
   const [checking, setChecking] = useState(false);
   const [capsule, setCapsule] = useState<OpenedCapsule | null>(null);
   const [check, setCheck] = useState<{ verified?: boolean; sealedAt?: string; reason?: string; error?: string } | null>(null);
+
+  const [badge, setBadge] = useState<{ mintAddress?: string; explorerUrl?: string; error?: string } | null>(null);
+  const startedMint = useRef(false);
 
   async function tryOpen(answerToSend: string) {
     setChecking(true);
@@ -49,6 +52,20 @@ export default function OpenCapsule({
       .then(setCheck)
       .catch(() => setCheck({ error: "Couldn't reach Solana — refresh to try again." }));
   }, [capsule, id]);
+
+  // Only untouched capsules earn a badge: mint it once the ✅ check passes
+  useEffect(() => {
+    if (!check?.verified || startedMint.current) return;
+    startedMint.current = true; // React dev mode runs effects twice — don't mint twice
+    fetch("/api/mint-badge", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id }),
+    })
+      .then((res) => res.json())
+      .then(setBadge)
+      .catch(() => setBadge({ error: "Testudo dropped the badge — refresh to try again." }));
+  }, [check, id]);
 
   // Older capsules have no secret question — open them straight away
   useEffect(() => {
@@ -228,15 +245,28 @@ export default function OpenCapsule({
           </div>
         )}
 
-        {/* Badge (filled in by Step 7) */}
-        {capsule.badgeMintAddress && (
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 text-center">
+        {/* Badge NFT */}
+        {check?.verified && !badge && (
+          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 text-center animate-pulse">
+            <div className="text-5xl mb-3">🎓</div>
+            <p className="font-semibold text-gray-700">Minting your Class of {classYear(capsule.unlockDate)} badge on Solana...</p>
+          </div>
+        )}
+        {badge?.error && (
+          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 text-center text-gray-500">
+            {badge.error}
+          </div>
+        )}
+        {badge?.mintAddress && (
+          <div className="bg-white rounded-2xl p-6 shadow-sm border-2 text-center" style={{ borderColor: "#FFD200" }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={`/api/badge/${classYear(capsule.unlockDate)}`} alt="Terp badge" className="w-48 h-48 mx-auto mb-3 rounded-full" />
-            <h2 className="font-bold text-gray-800 mb-1">Terp Class of {classYear(capsule.unlockDate)} Badge Minted!</h2>
-            <p className="text-xs text-gray-400 font-mono mb-4">{capsule.badgeMintAddress}</p>
+            <h2 className="font-bold text-gray-800 text-lg mb-1">Terp Class of {classYear(capsule.unlockDate)} badge is yours! 🎉</h2>
+            <p className="text-sm text-gray-500 mb-4">
+              Sent to {capsule.walletAddress.slice(0, 4)}...{capsule.walletAddress.slice(-4)}. Find it in Phantom (Devnet) → Collectibles.
+            </p>
             <a
-              href={`https://explorer.solana.com/address/${capsule.badgeMintAddress}?cluster=devnet`}
+              href={badge.explorerUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-block px-6 py-2 rounded-full text-sm font-semibold transition-opacity hover:opacity-80"

@@ -9,10 +9,15 @@
     "make-wallet": "tsx scripts/make-wallet.ts"
   },
   "dependencies": {
-    "@solana/web3.js": "^3.1.1",
+    "@metaplex-foundation/mpl-token-metadata": "^3.4.0",
+    "@metaplex-foundation/umi": "^1.6.0",
+    "@metaplex-foundation/umi-bundle-defaults": "^1.6.0",
+    "@metaplex-foundation/umi-uploader-irys": "^1.6.0",
+    "@solana/web3.js": "^1.99.0",
     "next": "16.4.3",
     "react": "19.3.0",
-    "react-dom": "19.3.0"
+    "react-dom": "19.3.0",
+    "sharp": "^0.35.5"
   },
   "devDependencies": {
     "@tailwindcss/turbopack": "^4",

@@ -57,3 +57,9 @@ export async function saveCapsule(capsule: Capsule): Promise<void> {
   await mkdir(DATA_DIR, { recursive: true });
   await writeFile(DATA_FILE, JSON.stringify(capsules, null, 2));
 }
+
+export async function updateCapsule(id: string, changes: Partial<Capsule>): Promise<void> {
+  const capsules = await getCapsules();
+  const updated = capsules.map((c) => (c.id === id ? { ...c, ...changes } : c));
+  await writeFile(DATA_FILE, JSON.stringify(updated, null, 2));
+}

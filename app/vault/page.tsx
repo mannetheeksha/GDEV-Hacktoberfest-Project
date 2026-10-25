@@ -14,7 +14,7 @@ export default function VaultPage() {
 
   useEffect(() => {
     setMounted(true);
-    setSkipToGrad(localStorage.getItem("skipToGrad") === "true");
+    setSkipToGrad(sessionStorage.getItem("skipToGrad") === "true");
     setWallet(localStorage.getItem("myWallet") || "");
   }, []);
 
@@ -61,7 +61,7 @@ export default function VaultPage() {
   function toggleSkip() {
     const next = !skipToGrad;
     setSkipToGrad(next);
-    localStorage.setItem("skipToGrad", String(next));
+    sessionStorage.setItem("skipToGrad", String(next));
   }
 
   return (

@@ -29,7 +29,7 @@ export async function sendMemo(text: string): Promise<string> {
   const memo = new TransactionInstruction({
     keys: [],
     programId: MEMO_PROGRAM_ID,
-    data: new TextEncoder().encode(text),
+    data: Buffer.from(text, "utf-8"),
   });
 
   const tx = new Transaction().add(memo);
