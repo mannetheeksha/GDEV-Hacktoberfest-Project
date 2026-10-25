@@ -1,5 +1,5 @@
 // The round vault door on the welcome page.
-// When `open` turns true: the wheel spins, the door swings open, and the campus glows through.
+// When `open` turns true: the wheel spins, the door swings open, and McKeldin glows through.
 
 const GOLD = "#d4a72c";
 const GOLD_LIGHT = "#f5d77a";
@@ -33,9 +33,15 @@ export default function VaultDoor({ open }: { open: boolean }) {
         })}
       </svg>
 
-      {/* The campus behind the door */}
-      <div className="absolute rounded-full overflow-hidden" style={{ inset: "6.5%" }}>
-        <CampusScene />
+      {/* McKeldin Library at night, behind the door */}
+      <div className="absolute rounded-full overflow-hidden bg-black" style={{ inset: "6.5%" }}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/vault-campus.jpg"
+          alt="McKeldin Library glowing at night"
+          className="vault-scene w-full h-full object-cover"
+          style={{ objectPosition: "50% 45%" }}
+        />
       </div>
 
       {/* The door itself (swings on its right hinge) */}
@@ -95,51 +101,3 @@ export default function VaultDoor({ open }: { open: boolean }) {
   );
 }
 
-// Sunrise over a domed campus building (McKeldin-style)
-function CampusScene() {
-  return (
-    <svg viewBox="0 0 340 340" className="w-full h-full" preserveAspectRatio="xMidYMid slice">
-      <defs>
-        <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#ffd98a" />
-          <stop offset="0.55" stopColor="#ffb85c" />
-          <stop offset="1" stopColor="#f6a24a" />
-        </linearGradient>
-        <radialGradient id="sun" cx="50%" cy="38%" r="45%">
-          <stop offset="0" stopColor="#fffbe8" />
-          <stop offset="0.4" stopColor="#fff1b8" stopOpacity="0.9" />
-          <stop offset="1" stopColor="#ffd98a" stopOpacity="0" />
-        </radialGradient>
-      </defs>
-      <rect width="340" height="340" fill="url(#sky)" />
-      <g className="scene-rays" style={{ transformOrigin: "170px 130px" }}>
-        {Array.from({ length: 12 }, (_, i) => (
-          <polygon key={i} points="170,130 160,-60 180,-60" fill="#fff6d6" opacity="0.35" transform={`rotate(${i * 30} 170 130)`} />
-        ))}
-      </g>
-      <rect width="340" height="340" fill="url(#sun)" />
-
-      {/* trees */}
-      {[[30, 215, 38], [80, 225, 30], [270, 222, 34], [318, 212, 40]].map(([x, y, r]) => (
-        <circle key={x} cx={x} cy={y} r={r} fill="#5e8f3e" opacity="0.9" />
-      ))}
-
-      {/* building */}
-      <g fill="#fbf3e4" stroke="#b9a07a" strokeWidth="1.5">
-        <rect x="95" y="175" width="150" height="70" />
-        <polygon points="120,175 170,148 220,175" />
-        <rect x="150" y="118" width="40" height="32" />
-        <path d="M146,120 Q170,78 194,120 Z" />
-        <rect x="166" y="66" width="8" height="18" />
-      </g>
-      {[110, 132, 154, 176, 198, 220].map((x) => (
-        <rect key={x} x={x} y="182" width="9" height="56" fill="#ffffff" stroke="#c9b28c" strokeWidth="1" />
-      ))}
-      <rect x="85" y="243" width="170" height="8" fill="#e8dcc4" />
-
-      {/* lawn + path */}
-      <rect x="0" y="250" width="340" height="90" fill="#6fa64a" />
-      <polygon points="150,251 190,251 250,340 90,340" fill="#e9d8b4" />
-    </svg>
-  );
-}

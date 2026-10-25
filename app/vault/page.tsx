@@ -2,8 +2,28 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import DarkRoom from "../components/DarkRoom";
+import YearEmblem, { type Year } from "../components/YearEmblem";
+import GraduationCountdown from "../components/GraduationCountdown";
 
 type CapsuleSummary = { id: string; author: string; unlockDate: string; sealedAt: string };
+
+// Each card is named after the school year it was written in
+const YEARS: { label: string; year: Year }[] = [
+  { label: "Freshman Year", year: "freshman" },
+  { label: "Sophomore Year", year: "sophomore" },
+  { label: "Junior Year", year: "junior" },
+  { label: "Senior Year", year: "senior" },
+];
+
+// e.g. sealed Oct 2026, graduating May 2029 → the 2026–27 school year → Sophomore
+function schoolYear(cap: CapsuleSummary) {
+  const sealed = new Date(cap.sealedAt);
+  const schoolYearEnds = sealed.getMonth() >= 6 ? sealed.getFullYear() + 1 : sealed.getFullYear(); // July starts a new year
+  const yearsLeft = new Date(cap.unlockDate).getFullYear() - schoolYearEnds;
+  if (yearsLeft < 0) return { label: "Alumni Letter", year: "alumni" as Year };
+  return YEARS[Math.max(0, 3 - yearsLeft)];
+}
 
 export default function VaultPage() {
   const [skipToGrad, setSkipToGrad] = useState(false);
@@ -65,43 +85,63 @@ export default function VaultPage() {
   }
 
   return (
-    <div className="min-h-screen py-12 px-4" style={{ background: "#fdf8f0" }}>
-      <div className="max-w-2xl mx-auto">
+    <DarkRoom className="px-4 pb-16">
+      {/* Nav */}
+      <nav className="relative max-w-4xl mx-auto flex items-center justify-between py-5">
+        <Link href="/" className="flex items-center gap-2 font-display text-lg font-bold" style={{ color: "#f5d77a" }}>
+          <span className="w-8 h-8 rounded-md flex items-center justify-center text-sm" style={{ background: "#E21833" }}>
+            🐢
+          </span>
+          Terp Time Capsule
+        </Link>
+        <Link
+          href="/write"
+          className="px-4 py-2 rounded-full text-sm font-bold shadow-md transition-transform hover:scale-105"
+          style={{ background: "#E21833", color: "white" }}
+        >
+          + New Capsule
+        </Link>
+      </nav>
 
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <Link href="/" className="text-sm block mb-1" style={{ color: "#E21833" }}>← Home</Link>
-            <h1 className="text-3xl font-bold" style={{ color: "#E21833" }}>The Vault 🏛️</h1>
-            {wallet && (
-              <p className="text-gray-500 text-sm mt-1">
+      <div className="relative max-w-4xl mx-auto">
+        {/* Title */}
+        <div className="text-center mt-4 mb-8">
+          <h1 className="font-display text-5xl font-bold drop-shadow-lg" style={{ color: "#fbe9c6" }}>
+            The Vault 🏛️
+          </h1>
+          <p className="text-white/70 mt-2">Your time capsules through the years.</p>
+
+          {wallet && (
+            <div className="mt-5 flex flex-wrap items-center justify-center gap-3 text-sm">
+              <span className="text-white/70">
                 {capsules ? `${capsules.length} capsule${capsules.length === 1 ? "" : "s"}` : "Opening the vault..."} for{" "}
                 <span className="font-mono">{wallet.slice(0, 4)}...{wallet.slice(-4)}</span>{" "}
-                <button onClick={changeWallet} className="underline" style={{ color: "#E21833" }}>
+                <button onClick={changeWallet} className="underline" style={{ color: "#f5d77a" }}>
                   change
                 </button>
-              </p>
-            )}
-          </div>
-          <button
-            onClick={toggleSkip}
-            className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold border-2 transition-all"
-            style={{
-              borderColor: skipToGrad ? "#FFD200" : "#ccc",
-              background: skipToGrad ? "#FFD200" : "white",
-              color: skipToGrad ? "#1a1a1a" : "#888",
-            }}
-            title="Unlocks all capsules for demo purposes"
-          >
-            ⏩ Skip to Graduation
-          </button>
+              </span>
+              <button
+                onClick={toggleSkip}
+                className="px-4 py-1.5 rounded-full font-semibold border-2 transition-all"
+                style={{
+                  borderColor: skipToGrad ? "#FFD200" : "rgba(255,255,255,0.3)",
+                  background: skipToGrad ? "#FFD200" : "rgba(0,0,0,0.3)",
+                  color: skipToGrad ? "#1a1a1a" : "rgba(255,255,255,0.8)",
+                  boxShadow: skipToGrad ? "0 0 24px rgba(255,210,0,0.5)" : "none",
+                }}
+                title="Unlocks all capsules for demo purposes"
+              >
+                ⏩ Skip to Graduation
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Ask whose vault this is */}
         {mounted && !wallet && (
-          <form onSubmit={chooseWallet} className="bg-white rounded-2xl p-8 shadow-sm border-2 text-center" style={{ borderColor: "#FFD200" }}>
+          <form onSubmit={chooseWallet} className="max-w-md mx-auto rounded-3xl p-8 border-2 text-center" style={{ background: "#fffaf0", borderColor: "#FFD200", boxShadow: "0 0 60px rgba(255,190,90,0.25)" }}>
             <div className="text-5xl mb-3">👛</div>
-            <h2 className="font-bold text-gray-800 text-lg mb-1">Your wallet is your key</h2>
+            <h2 className="font-display font-bold text-gray-800 text-2xl mb-1">Your wallet is your key</h2>
             <p className="text-sm text-gray-500 mb-4">Paste the Solana wallet address you sealed your capsules with.</p>
             <input
               type="text"
@@ -109,7 +149,7 @@ export default function VaultPage() {
               onChange={(e) => setWalletInput(e.target.value)}
               required
               placeholder="e.g. 7xKqP3..."
-              className="w-full border border-gray-200 rounded-xl px-4 py-3 text-gray-800 font-mono text-sm focus:outline-none focus:ring-2"
+              className="w-full border border-gray-200 rounded-xl px-4 py-3 text-gray-800 bg-[#fffdf8] font-mono text-sm focus:outline-none focus:ring-2 focus:ring-[#FFD200]"
             />
             <button
               type="submit"
@@ -121,69 +161,88 @@ export default function VaultPage() {
           </form>
         )}
 
-        {/* Capsule list */}
-        <div className="flex flex-col gap-4">
-          {capsules?.length === 0 && (
-            <div className="bg-white rounded-2xl p-10 text-center text-gray-500 border border-gray-100">
-              <div className="text-5xl mb-3">🐢</div>
-              No capsules for this wallet yet. Testudo is waiting for your first one!
-            </div>
-          )}
-          {capsules?.map((cap) => {
+        {/* Empty vault */}
+        {capsules?.length === 0 && (
+          <div className="max-w-md mx-auto rounded-3xl p-10 text-center text-gray-600" style={{ background: "#fffaf0", boxShadow: "0 0 60px rgba(255,190,90,0.2)" }}>
+            <div className="text-6xl mb-3">🐢</div>
+            <p>No capsules for this wallet yet. Testudo is waiting for your first one!</p>
+            <Link
+              href="/write"
+              className="inline-block mt-5 px-6 py-3 rounded-full font-bold shadow-md transition-transform hover:scale-105"
+              style={{ background: "#E21833", color: "white" }}
+            >
+              ✍️ Write your first capsule
+            </Link>
+          </div>
+        )}
+
+        {/* Live countdown to graduation, above the cards */}
+        {mounted && capsules && capsules.length > 0 && (
+          <GraduationCountdown unlockDates={capsules.map((c) => c.unlockDate)} skipped={skipToGrad} />
+        )}
+
+        {/* Capsule grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+          {capsules?.map((cap, i) => {
             const isUnlocked = skipToGrad || !isLocked(cap);
-            return (
+            const year = schoolYear(cap);
+            const card = (
               <div
-                key={cap.id}
-                className="bg-white rounded-2xl p-6 shadow-sm border flex items-center justify-between"
-                style={{ borderColor: isUnlocked ? "#FFD200" : "#e5e7eb" }}
+                className="fade-up group h-full rounded-3xl p-4 border-2 transition-all duration-300 hover:-translate-y-1"
+                style={{
+                  background: "#fffaf0",
+                  borderColor: isUnlocked ? "#FFD200" : "rgba(212,167,44,0.35)",
+                  boxShadow: isUnlocked ? "0 0 40px rgba(255,210,0,0.35)" : "0 0 30px rgba(255,190,90,0.12)",
+                  animationDelay: `${i * 0.08}s`,
+                }}
               >
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-xl">{isUnlocked ? "📬" : "🔒"}</span>
-                    <span className="font-bold text-gray-800">{cap.author}</span>
-                  </div>
-                  <p className="text-xs text-gray-400">
-                    Sealed {new Date(cap.sealedAt).toLocaleDateString()}
-                  </p>
-                  <p
-                    className="text-sm font-medium mt-1"
-                    style={{ color: isUnlocked ? "#16a34a" : "#6b7280" }}
+                {/* Illustration tile */}
+                <div
+                  className="relative h-40 rounded-2xl flex items-center justify-center overflow-hidden"
+                  style={{ background: "radial-gradient(circle at 50% 45%, #5a3a22 0%, #2a1a10 60%, #150c06 100%)" }}
+                >
+                  <div className="lantern-glow absolute inset-0" style={{ background: "radial-gradient(circle at 50% 50%, rgba(255,200,100,0.35), transparent 60%)" }} />
+                  <span className="twinkle absolute top-3 left-4 text-yellow-300 text-sm">✦</span>
+                  <span className="twinkle absolute bottom-4 right-8 text-yellow-200 text-xs" style={{ animationDelay: "0.8s" }}>✦</span>
+                  <span className="twinkle absolute bottom-5 left-10 text-yellow-300 text-xs" style={{ animationDelay: "1.6s" }}>✦</span>
+                  <YearEmblem
+                    year={year.year}
+                    className="relative h-32 drop-shadow-[0_0_14px_rgba(255,210,0,0.45)] transition-transform duration-300 group-hover:scale-110 group-hover:-rotate-3"
+                  />
+                  <span
+                    className="absolute top-3 right-3 px-2.5 py-0.5 rounded-full text-xs font-bold"
+                    style={isUnlocked ? { background: "#FFD200", color: "#1a1a1a" } : { background: "rgba(0,0,0,0.5)", color: "rgba(255,255,255,0.85)" }}
                   >
-                    {isUnlocked ? "Ready to open ✅" : getCountdown(cap.unlockDate)}
-                  </p>
+                    {isUnlocked ? "Ready ✨" : "🔒 Locked"}
+                  </span>
                 </div>
-                {isUnlocked ? (
-                  <Link
-                    href={`/capsule/${cap.id}`}
-                    className="px-5 py-2 rounded-full font-semibold text-sm shadow-sm transition-transform hover:scale-105"
-                    style={{ background: "#E21833", color: "white" }}
-                  >
-                    Open →
-                  </Link>
-                ) : (
-                  <div
-                    className="px-5 py-2 rounded-full text-sm font-semibold"
-                    style={{ background: "#f3f4f6", color: "#9ca3af" }}
-                  >
-                    Locked
+
+                <div className="px-1 pt-3 flex items-end justify-between gap-2">
+                  <div>
+                    <h2 className="font-display text-xl font-bold text-gray-900">{year.label}</h2>
+                    <p className="text-xs text-gray-400 mt-0.5">Sealed {new Date(cap.sealedAt).toLocaleDateString()}</p>
+                    <p className="text-sm mt-1" style={{ color: isUnlocked ? "#16a34a" : "#6b7280" }}>
+                      {isUnlocked ? "Ready to open" : getCountdown(cap.unlockDate)}
+                    </p>
                   </div>
-                )}
+                  {isUnlocked && (
+                    <span className="shrink-0 px-4 py-2 rounded-full text-sm font-bold shadow-sm" style={{ background: "#E21833", color: "white" }}>
+                      Open →
+                    </span>
+                  )}
+                </div>
               </div>
+            );
+            return isUnlocked ? (
+              <Link key={cap.id} href={`/capsule/${cap.id}`} aria-label={`Open ${year.label} capsule`}>
+                {card}
+              </Link>
+            ) : (
+              <div key={cap.id}>{card}</div>
             );
           })}
         </div>
-
-        {/* Write new */}
-        <div className="mt-10 text-center">
-          <Link
-            href="/write"
-            className="inline-block px-8 py-3 rounded-full font-bold text-base shadow-md transition-transform hover:scale-105"
-            style={{ background: "#E21833", color: "white" }}
-          >
-            ✍️ Write a new capsule
-          </Link>
-        </div>
       </div>
-    </div>
+    </DarkRoom>
   );
 }

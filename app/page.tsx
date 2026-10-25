@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import VaultDoor from "./components/VaultDoor";
+import DarkRoom from "./components/DarkRoom";
 
 const DOOR_OPEN_MS = 2400; // wheel spins, then the door swings open
 
@@ -11,21 +12,24 @@ export default function Home() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const navigating = useRef(false);
+  const openedAt = useRef(0); // when the door started opening
 
   // Any first click, tap or key press opens the vault
   function openVault() {
+    if (!openedAt.current) openedAt.current = Date.now();
     setOpen(true);
   }
 
-  // The two big buttons: open the vault, then walk through it
-  function goThrough(e: React.MouseEvent, href: string) {
+  // Open the vault (if it isn't already), wait for the door, then walk through it
+  function goThrough(e: React.SyntheticEvent, href: string) {
     e.preventDefault();
     e.stopPropagation();
     if (navigating.current) return;
     navigating.current = true;
+    openVault();
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    setOpen(true);
-    setTimeout(() => router.push(href), open || reduceMotion ? 300 : DOOR_OPEN_MS);
+    const doorStillMoving = DOOR_OPEN_MS - (Date.now() - openedAt.current);
+    setTimeout(() => router.push(href), reduceMotion ? 300 : Math.max(300, doorStillMoving));
   }
 
   // Runs every time this page is shown — including coming Back to it,
@@ -33,6 +37,7 @@ export default function Home() {
   useEffect(() => {
     setOpen(false);
     navigating.current = false;
+    openedAt.current = 0;
     router.prefetch("/write");
     router.prefetch("/vault");
     window.addEventListener("keydown", openVault, { once: true });
@@ -40,22 +45,8 @@ export default function Home() {
   }, [router]);
 
   return (
-    <div
-      onPointerDown={openVault}
-      className="relative min-h-screen overflow-hidden flex flex-col items-center px-4 pb-10"
-      style={{
-        background:
-          "radial-gradient(ellipse at 50% 45%, #3b2618 0%, #1e130c 55%, #0d0805 100%)",
-      }}
-    >
-      {/* stone wall texture */}
-      <div
-        className="absolute inset-0 opacity-25 pointer-events-none"
-        style={{
-          backgroundImage:
-            "repeating-linear-gradient(0deg, transparent 0 46px, rgba(0,0,0,0.6) 46px 48px), repeating-linear-gradient(90deg, transparent 0 94px, rgba(0,0,0,0.45) 94px 96px)",
-        }}
-      />
+    <DarkRoom>
+    <div onPointerDown={openVault} className="relative min-h-screen flex flex-col items-center px-4 pb-10">
 
       {/* Banners + lanterns (wider screens) */}
       <Banner side="left" />
@@ -97,16 +88,23 @@ export default function Home() {
         </p>
       </div>
 
-      {/* The vault */}
-      <div className="relative z-10 mt-8 md:mt-10 cursor-pointer" onClick={openVault}>
+      {/* The vault: turn the wheel to open it, then step inside to your capsules */}
+      <div
+        role="button"
+        tabIndex={0}
+        aria-label="Open the vault and see your capsules"
+        className="relative z-10 mt-8 md:mt-10 cursor-pointer rounded-full transition-transform hover:scale-[1.02] focus:outline-none focus-visible:ring-4 focus-visible:ring-[#FFD200]"
+        onClick={(e) => goThrough(e, "/vault")}
+        onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && goThrough(e, "/vault")}
+      >
         <VaultDoor open={open} />
       </div>
-      <p className={`relative z-10 mt-4 text-sm ${open ? "invisible" : "animate-pulse"}`} style={{ color: "#f5d77a" }}>
-        Tap the vault to open it
+      <p className="relative z-10 mt-4 text-sm animate-pulse" style={{ color: "#f5d77a" }}>
+        {open ? "Tap McKeldin to step inside your vault" : "Turn the wheel to open your vault"}
       </p>
 
-      {/* Buttons */}
-      <div className="relative z-10 mt-4 flex flex-col sm:flex-row gap-4">
+      {/* Button */}
+      <div className="relative z-10 mt-4">
         <Link
           href="/write"
           onClick={(e) => goThrough(e, "/write")}
@@ -114,14 +112,6 @@ export default function Home() {
           style={{ background: "linear-gradient(180deg, #ffe066, #FFD200)", color: "#1a1a1a" }}
         >
           📜 Write your capsule →
-        </Link>
-        <Link
-          href="/vault"
-          onClick={(e) => goThrough(e, "/vault")}
-          className="flex items-center justify-center gap-2 px-8 py-4 rounded-full font-bold text-lg border-2 transition-transform hover:scale-105 active:scale-95"
-          style={{ borderColor: "#FFD200", color: "#FFD200", background: "rgba(0,0,0,0.35)" }}
-        >
-          🏛️ View the vault
         </Link>
       </div>
 
@@ -131,6 +121,7 @@ export default function Home() {
         until you walk across that stage.
       </p>
     </div>
+    </DarkRoom>
   );
 }
 

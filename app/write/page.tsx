@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import DarkRoom from "../components/DarkRoom";
 
 const SECRET_QUESTIONS = [
   "What dining hall did you eat at most?",
@@ -118,17 +119,22 @@ export default function WritePage() {
   });
 
   return (
-    <div className="relative min-h-screen py-8 px-4 overflow-hidden" style={{ background: "#fdf8f0" }}>
+    <DarkRoom className="py-8 px-4">
       <CampusSketch />
 
       <div className="relative max-w-xl mx-auto">
-        <Link href="/" className="text-sm inline-block mb-5" style={{ color: "#E21833" }}>
+        <Link href="/" className="text-sm inline-block mb-5" style={{ color: "#f5d77a" }}>
           ← Back
         </Link>
 
         <Progress step={step} />
 
-        <form onSubmit={handleSubmit} noValidate className="mt-6 bg-white rounded-3xl shadow-lg border border-[#f1e6d0] p-6 md:p-8">
+        <form
+          onSubmit={handleSubmit}
+          noValidate
+          className="mt-6 rounded-3xl border-2 p-6 md:p-8"
+          style={{ background: "#fffaf0", borderColor: "rgba(212,167,44,0.6)", boxShadow: "0 0 70px rgba(255,190,90,0.22), 0 20px 50px rgba(0,0,0,0.5)" }}
+        >
 
           {/* Step 1 — Write */}
           <div {...stepBox(0)}>
@@ -291,7 +297,7 @@ export default function WritePage() {
           </div>
         </form>
       </div>
-    </div>
+    </DarkRoom>
   );
 }
 
@@ -304,20 +310,21 @@ function Progress({ step }: { step: number }) {
           {i > 0 && (
             <div
               className="absolute top-4 right-1/2 w-full h-0.5 transition-colors duration-500"
-              style={{ background: i <= step ? "#E21833" : "#e5e7eb" }}
+              style={{ background: i <= step ? "#FFD200" : "rgba(255,255,255,0.2)" }}
             />
           )}
           <div
             className="relative z-10 w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-colors duration-500"
             style={{
-              background: i <= step ? "#E21833" : "white",
-              color: i <= step ? "white" : "#9ca3af",
-              border: i <= step ? "none" : "2px solid #e5e7eb",
+              background: i < step ? "#FFD200" : i === step ? "#E21833" : "rgba(0,0,0,0.35)",
+              color: i < step ? "#1a1a1a" : i === step ? "white" : "rgba(255,255,255,0.6)",
+              border: i <= step ? "none" : "2px solid rgba(255,255,255,0.25)",
+              boxShadow: i === step ? "0 0 18px rgba(226,24,51,0.7)" : i < step ? "0 0 12px rgba(255,210,0,0.4)" : "none",
             }}
           >
             {i < step ? "✓" : i + 1}
           </div>
-          <span className="mt-1 text-xs" style={{ color: i === step ? "#E21833" : "#6b7280", fontWeight: i === step ? 700 : 400 }}>
+          <span className="mt-1 text-xs" style={{ color: i === step ? "#FFD200" : i < step ? "#fbe9c6" : "rgba(255,255,255,0.5)", fontWeight: i === step ? 700 : 400 }}>
             {label}
           </span>
         </div>
@@ -359,10 +366,10 @@ function Field({ label, icon, hint, counter, children }: { label: string; icon: 
   );
 }
 
-// Faint campus outline in the background, like the mockup
+// Faint golden campus outline in the background
 function CampusSketch() {
   return (
-    <svg viewBox="0 0 600 260" className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[900px] max-w-none opacity-[0.07] pointer-events-none" fill="none" stroke="#7a4b1d" strokeWidth="3">
+    <svg viewBox="0 0 600 260" className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[900px] max-w-none opacity-[0.08] pointer-events-none" fill="none" stroke="#f5d77a" strokeWidth="3">
       <rect x="180" y="130" width="240" height="110" />
       <polygon points="220,130 300,90 380,130" />
       <rect x="270" y="50" width="60" height="42" />

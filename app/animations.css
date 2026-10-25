@@ -77,9 +77,7 @@
 .vault-glow { opacity: 0; transition: opacity 1.2s ease 1.3s; }
 .vault-open .vault-glow { opacity: 1; }
 
-/* Slowly turning sun rays behind the door */
 @keyframes spin-slow { to { transform: rotate(360deg); } }
-.scene-rays { animation: spin-slow 40s linear infinite; }
 
 /* Lanterns flicker */
 @keyframes flicker {
@@ -92,7 +90,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .vault-wheel, .vault-door, .vault-glow { transition: none; }
-  .scene-rays, .lantern-glow { animation: none; }
+  .lantern-glow { animation: none; }
 }
 
 /* ---------- Sealing page: letter goes into the envelope ---------- */
@@ -141,3 +139,8 @@
   .sealing .wax-stamp { animation: none; opacity: 1; }
   .orbit, .orbit-reverse, .glow-pulse, .float-photo, .twinkle { animation: none; }
 }
+
+/* The photo behind the vault door slowly zooms in as the door opens */
+.vault-scene { transform: scale(1.15); transition: transform 3s ease-out 1s; }
+.vault-open .vault-scene { transform: scale(1); }
+@media (prefers-reduced-motion: reduce) { .vault-scene { transition: none; } }
