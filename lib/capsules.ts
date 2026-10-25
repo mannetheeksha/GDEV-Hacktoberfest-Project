@@ -1,5 +1,6 @@
 import { readFile, writeFile, mkdir } from "fs/promises";
 import path from "path";
+import crypto from "crypto";
 
 export type Capsule = {
   id: string;
@@ -14,7 +15,18 @@ export type Capsule = {
   sealTx: string;
   badgeMintAddress?: string;
   sealedAt: string;
+  secretQuestion?: string;  // asked before the capsule opens
+  answerHash?: string;      // SHA-256 of the answer — the real answer is never stored
 };
+
+// What the browser is allowed to see once the capsule is unlocked
+export type OpenedCapsule = Omit<Capsule, "answerHash">;
+
+// "  The Diner " and "the diner" count as the same answer
+export function hashAnswer(answer: string): string {
+  const cleaned = answer.trim().toLowerCase().replace(/\s+/g, " ");
+  return crypto.createHash("sha256").update(cleaned).digest("hex");
+}
 
 const DATA_DIR = path.join(process.cwd(), "data");
 const DATA_FILE = path.join(DATA_DIR, "capsules.json");

@@ -1,5 +1,5 @@
 import crypto from "crypto";
-import { saveCapsule, type Capsule } from "@/lib/capsules";
+import { saveCapsule, hashAnswer, type Capsule } from "@/lib/capsules";
 import { sendMemo, explorerTxUrl } from "@/lib/solana";
 
 export async function POST(request: Request) {
@@ -7,6 +7,9 @@ export async function POST(request: Request) {
 
   if (!body.author || !body.walletAddress || !body.letter) {
     return Response.json({ error: "Name, wallet address and letter are required" }, { status: 400 });
+  }
+  if (!body.secretQuestion?.trim() || !body.secretAnswer?.trim()) {
+    return Response.json({ error: "Please choose a secret question and answer it" }, { status: 400 });
   }
 
   const notes = body.notes || "";
@@ -33,6 +36,8 @@ export async function POST(request: Request) {
     hash,
     sealTx,
     sealedAt: new Date().toISOString(),
+    secretQuestion: body.secretQuestion.trim(),
+    answerHash: hashAnswer(body.secretAnswer),
   };
 
   await saveCapsule(capsule);

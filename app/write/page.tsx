@@ -4,11 +4,23 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
+const SECRET_QUESTIONS = [
+  "What dining hall did you eat at most?",
+  "Who was your first friend at UMD?",
+  "What was your first dorm?",
+  "What class surprised you the most?",
+  "Where was your favorite study spot on campus?",
+  "What did you rub Testudo's nose for?",
+];
+const WRITE_OWN = "write-own";
+
 export default function WritePage() {
   const router = useRouter();
   const [captions, setCaptions] = useState(["", "", ""]);
   const [photoUrls, setPhotoUrls] = useState(["", "", ""]);
   const [uploading, setUploading] = useState([false, false, false]);
+  const [questionChoice, setQuestionChoice] = useState(SECRET_QUESTIONS[0]);
+  const [ownQuestion, setOwnQuestion] = useState("");
 
   function handleCaptionChange(i: number, val: string) {
     const next = [...captions];
@@ -57,6 +69,8 @@ export default function WritePage() {
       unlockDate: form.get("unlockDate"),
       photoUrls: slots.map((i) => photoUrls[i]),
       photoCaptions: slots.map((i) => captions[i].trim()),
+      secretQuestion: questionChoice === WRITE_OWN ? ownQuestion : questionChoice,
+      secretAnswer: form.get("secretAnswer"),
     };
 
     // The sealing page picks this up and sends it to /api/seal
@@ -203,6 +217,43 @@ export default function WritePage() {
               className="border border-gray-200 rounded-xl px-4 py-3 text-gray-800 focus:outline-none focus:ring-2"
             />
             <p className="text-xs text-gray-400 mt-2">Default: May 20, 2029 (Class of 2029 graduation). Your badge says the year your capsule unlocks.</p>
+          </div>
+
+          {/* Secret question */}
+          <div className="bg-white rounded-2xl p-6 shadow-sm border-2" style={{ borderColor: "#FFD200" }}>
+            <label className="block font-semibold mb-1 text-gray-700">🔑 Your secret unlock question</label>
+            <p className="text-xs text-gray-400 mb-3">
+              At graduation, you&apos;ll answer this to open your capsule. Pick something only you would know.
+            </p>
+            <select
+              value={questionChoice}
+              onChange={(e) => setQuestionChoice(e.target.value)}
+              className="w-full border border-gray-200 rounded-xl px-4 py-3 text-gray-800 bg-white focus:outline-none focus:ring-2"
+            >
+              {SECRET_QUESTIONS.map((q) => (
+                <option key={q} value={q}>{q}</option>
+              ))}
+              <option value={WRITE_OWN}>✏️ Write my own...</option>
+            </select>
+            {questionChoice === WRITE_OWN && (
+              <input
+                type="text"
+                value={ownQuestion}
+                onChange={(e) => setOwnQuestion(e.target.value)}
+                required
+                placeholder="e.g. What was the name of my CMSC131 TA?"
+                className="w-full mt-3 border border-gray-200 rounded-xl px-4 py-3 text-gray-800 focus:outline-none focus:ring-2"
+              />
+            )}
+            <input
+              type="text"
+              name="secretAnswer"
+              required
+              autoComplete="off"
+              placeholder="Your answer (not case sensitive)"
+              className="w-full mt-3 border border-gray-200 rounded-xl px-4 py-3 text-gray-800 focus:outline-none focus:ring-2"
+            />
+            <p className="text-xs text-gray-400 mt-2">Don&apos;t forget it. Testudo can&apos;t reset it for you! 🐢</p>
           </div>
 
           {/* Submit */}

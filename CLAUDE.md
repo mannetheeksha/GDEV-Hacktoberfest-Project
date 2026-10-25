@@ -12,6 +12,7 @@ Students write a letter to their future selves (or to next year's freshmen), sea
 - The capsule's SHA-256 hash is recorded on Solana devnet, so nobody can edit or backdate it.
 - On opening, the app re-checks the hash against Solana and shows "Unedited since <date> ✅".
 - Opening mints a "Terp Class of <year>" badge NFT (year = the unlock date's year, starting at 2029) to the student's wallet.
+- Each capsule has a secret question; the student must answer it to open the capsule.
 - A "Skip to Graduation" button unlocks everything for the live demo.
 
 ## Tech stack (do not change)
@@ -39,18 +40,21 @@ type Capsule = {
   sealTx: string;           // Solana signature
   badgeMintAddress?: string;
   sealedAt: string;         // ISO datetime
+  secretQuestion: string;   // asked before opening
+  answerHash: string;       // SHA-256 of the trimmed, lowercased answer (never store the answer itself)
 };
 ```
 
 ## Pages
 1. `/` — Landing: title, one-line pitch, "Write your capsule" button.
-2. `/write` — Form: name, wallet address, letter, semester notes, 3 photo upload sections (each: an image picker with a preview + a caption box; all optional), unlock date. Button: "Seal my capsule".
+2. `/write` — Form: name, wallet address, letter, semester notes, 3 photo upload sections (each: an image picker with a preview + a caption box; all optional), unlock date, secret question (dropdown of UMD questions or "Write my own") + answer. Button: "Seal my capsule".
 3. `/sealing` — Animated wax-seal / envelope closing. Calls `/api/seal`, then shows "Sealed on Solana" with an Explorer link, then a button to the vault.
 4. `/vault` — List of capsules. Locked: countdown to unlock date. Unlocked: "Open" button. Top-right: "⏩ Skip to Graduation" toggle (stored in localStorage) that treats all as unlocked.
-5. `/capsule/[id]` — Open view: calls `/api/verify` → shows verified badge or "⚠️ tampered", reveals letter + notes + the uploaded photos with their captions, then calls `/api/mint-badge` and shows the badge image + Explorer link.
+5. `/capsule/[id]` — Locked view asks the secret question → `/api/open`. Once unlocked: calls `/api/verify` → shows verified badge or "⚠️ tampered", reveals letter + notes + the uploaded photos with their captions, then calls `/api/mint-badge` and shows the badge image + Explorer link.
 
 ## API routes
-- `GET /api/capsules` → all capsules, newest first (used by `/vault`)
+- `GET /api/capsules` → id, author, unlockDate, sealedAt of every capsule, newest first (used by `/vault`; never letters)
+- `POST /api/open` → `{ id, answer }` → full capsule (without `answerHash`) if the answer is right, else 401
 - `GET /api/badge/<year>` → the badge SVG for that class year (design: Testudo peeking out of an envelope, drawn in `lib/badge.ts`)
 - `POST /api/upload` → form-data with one `file` → saves it to `public/uploads/` with a random name → `{ url }`
 - `POST /api/seal` → saves capsule, hashes it, sends a devnet memo tx containing `TERP-CAPSULE:<hash>` → `{ id, sealTx, explorerUrl }`
@@ -73,3 +77,6 @@ type Capsule = {
 6. `/api/verify`. **Done when:** an unchanged capsule shows ✅, and manually editing the letter in the JSON shows ⚠️.
 7. `/api/mint-badge`. **Done when:** the badge appears in a Phantom wallet set to devnet.
 8. Polish: animations, loading text, empty states, Skip to Graduation. **Done when:** the full demo runs 3 times with no errors.
+
+## Stretch goals (only if time is left after step 8)
+- Face ID with FACEIO (fio.js, free plan or trial): scan face on seal, scan again on open. Keep the secret question as a "Can't scan?" backup. Needs the FACEIO app Public ID.
