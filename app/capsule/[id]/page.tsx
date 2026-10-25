@@ -14,11 +14,11 @@ export default async function CapsulePage({
 
   if (!capsule) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: "#fdf8f0" }}>
+      <div className="dark-room min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="text-6xl mb-4">🔒</div>
-          <p className="text-gray-500">Capsule not found or still locked.</p>
-          <Link href="/vault" className="mt-4 inline-block underline" style={{ color: "#E21833" }}>
+          <p className="text-white/70">Capsule not found or still locked.</p>
+          <Link href="/vault" className="mt-4 inline-block underline" style={{ color: "#f5d77a" }}>
             Back to vault
           </Link>
         </div>

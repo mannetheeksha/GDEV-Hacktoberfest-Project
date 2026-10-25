@@ -106,8 +106,8 @@ export default function OpenCapsule({
   if (stillLocked && !capsule) {
     const daysLeft = Math.ceil((new Date(unlockDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
     return (
-      <div className="min-h-screen py-12 px-4 flex items-center" style={{ background: "#fdf8f0" }}>
-        <div className="max-w-md mx-auto w-full text-center bg-white rounded-3xl p-8 shadow-md border border-gray-100">
+      <div className="dark-room min-h-screen py-12 px-4 flex items-center">
+        <div className="max-w-md mx-auto w-full text-center parchment rounded-3xl p-8">
           <div className="text-6xl mb-4">🔒</div>
           <h1 className="text-2xl font-bold mb-2" style={{ color: "#E21833" }}>Not graduation day yet!</h1>
           <p className="text-gray-500">
@@ -126,9 +126,9 @@ export default function OpenCapsule({
   // ---------- Locked: ask the secret question ----------
   if (!capsule) {
     return (
-      <div className="min-h-screen py-12 px-4 flex items-center" style={{ background: "#fdf8f0" }}>
+      <div className="dark-room min-h-screen py-12 px-4 flex items-center">
         <div className="max-w-md mx-auto w-full">
-          <Link href="/vault" className="text-sm block mb-6" style={{ color: "#E21833" }}>
+          <Link href="/vault" className="text-sm block mb-6" style={{ color: "#f5d77a" }}>
             ← Back to vault
           </Link>
 
@@ -138,8 +138,8 @@ export default function OpenCapsule({
                 e.preventDefault();
                 tryOpen(answer);
               }}
-              className="bg-white rounded-3xl p-8 shadow-md border-2 text-center"
-              style={{ borderColor: "#FFD200" }}
+              className="parchment rounded-3xl p-8 border-2 text-center"
+              style={{ borderColor: "#FFD200", boxShadow: "0 0 60px rgba(255,210,0,0.25), 0 12px 30px rgba(0,0,0,0.45)" }}
             >
               <div className="text-6xl mb-4">🔑</div>
               <p className="text-gray-500 mb-2">Testudo has one question for you, {author}:</p>
@@ -167,7 +167,7 @@ export default function OpenCapsule({
               <p className="text-xs text-gray-400 mt-3">Not case sensitive.</p>
             </form>
           ) : (
-            <p className="text-center text-gray-500">{error || "Opening the capsule..."}</p>
+            <p className="text-center text-white/70">{error || "Opening the capsule..."}</p>
           )}
         </div>
       </div>
@@ -181,11 +181,11 @@ export default function OpenCapsule({
 
   // ---------- Unlocked: show everything ----------
   return (
-    <div className="min-h-screen py-12 px-4" style={{ background: "#fdf8f0" }}>
+    <div className="dark-room min-h-screen py-12 px-4">
       <div className="max-w-2xl mx-auto">
 
         {/* Back */}
-        <Link href="/vault" className="text-sm block mb-6" style={{ color: "#E21833" }}>
+        <Link href="/vault" className="text-sm block mb-6" style={{ color: "#f5d77a" }}>
           ← Back to vault
         </Link>
 
@@ -223,7 +223,7 @@ export default function OpenCapsule({
         )}
 
         {/* Author + date */}
-        <div className="fade-up bg-white rounded-2xl p-6 shadow-sm border border-gray-100 mb-5" style={{ animationDelay: "0.1s" }}>
+        <div className="fade-up parchment rounded-2xl p-6 mb-5" style={{ animationDelay: "0.1s" }}>
           <div className="flex items-center gap-3">
             <div
               className="w-12 h-12 rounded-full flex items-center justify-center text-xl font-bold"
@@ -243,7 +243,7 @@ export default function OpenCapsule({
         </div>
 
         {/* Letter */}
-        <div className="fade-up bg-white rounded-2xl p-6 shadow-sm border border-gray-100 mb-5" style={{ animationDelay: "0.2s" }}>
+        <div className="fade-up parchment rounded-2xl p-6 mb-5" style={{ animationDelay: "0.2s" }}>
           <h2 className="font-bold text-gray-700 mb-3 flex items-center gap-2">
             <span>📜</span> Their Letter
           </h2>
@@ -254,7 +254,7 @@ export default function OpenCapsule({
 
         {/* Photos */}
         {(capsule.photoUrls.some(Boolean) || capsule.photoCaptions.some(Boolean)) && (
-          <div className="fade-up bg-white rounded-2xl p-6 shadow-sm border border-gray-100 mb-5" style={{ animationDelay: "0.3s" }}>
+          <div className="fade-up parchment rounded-2xl p-6 mb-5" style={{ animationDelay: "0.3s" }}>
             <h2 className="font-bold text-gray-700 mb-3 flex items-center gap-2">
               <span>📷</span> Their Photos
             </h2>
@@ -280,8 +280,8 @@ export default function OpenCapsule({
         {/* Semester notes */}
         {capsule.notes && (
           <div
-            className="fade-up rounded-2xl p-6 shadow-sm mb-5 border"
-            style={{ background: "#fffbeb", borderColor: "#FFD200", animationDelay: "0.4s" }}
+            className="fade-up rounded-2xl p-6 mb-5 border"
+            style={{ background: "#fffbeb", borderColor: "#FFD200", boxShadow: "0 0 45px rgba(255,190,90,0.2)", animationDelay: "0.4s" }}
           >
             <h2 className="font-bold mb-3 flex items-center gap-2" style={{ color: "#92400e" }}>
               <span>📝</span> Semester Notes
@@ -294,20 +294,20 @@ export default function OpenCapsule({
 
         {/* Badge NFT */}
         {check?.verified && !badge && (
-          <div className="fade-up bg-white rounded-2xl p-6 shadow-sm border border-gray-100 text-center" style={{ animationDelay: "0.5s" }}>
+          <div className="fade-up parchment rounded-2xl p-6 text-center" style={{ animationDelay: "0.5s" }}>
             <div className="text-5xl mb-3 animate-bounce">🎓</div>
             <p className="font-semibold text-gray-700">Minting your Class of {classYear(capsule.unlockDate)} badge on Solana...</p>
           </div>
         )}
         {badge?.error && (
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 text-center text-gray-500">
+          <div className="parchment rounded-2xl p-6 text-center text-gray-500">
             {badge.error}
           </div>
         )}
         {badge?.mintAddress && (
           <>
             <Confetti />
-            <div className="pop-in bg-white rounded-2xl p-6 shadow-md border-2 text-center" style={{ borderColor: "#FFD200" }}>
+            <div className="pop-in parchment rounded-2xl p-6 border-2 text-center" style={{ borderColor: "#FFD200", boxShadow: "0 0 60px rgba(255,210,0,0.35)" }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={`/api/badge/${classYear(capsule.unlockDate)}`} alt="Terp badge" className="w-48 h-48 mx-auto mb-3 rounded-full" />
               <h2 className="font-bold text-gray-800 text-lg mb-1">Terp Class of {classYear(capsule.unlockDate)} badge is yours! 🎉</h2>

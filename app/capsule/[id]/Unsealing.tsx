@@ -13,7 +13,7 @@ export default function Unsealing({ phase, check, hash }: { phase: Phase; check:
   const scanColor = phase === "scanning" || !check ? "#9ca3af" : check.verified ? "#16a34a" : check.error ? "#6b7280" : "#dc2626";
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-4" style={{ background: "#fdf8f0" }}>
+    <div className="dark-room min-h-screen flex flex-col items-center justify-center px-4">
       {/* Envelope */}
       <svg
         viewBox="0 -100 300 320"
@@ -45,7 +45,7 @@ export default function Unsealing({ phase, check, hash }: { phase: Phase; check:
       </svg>
 
       {/* Fingerprint scanner */}
-      <div className="mt-8 bg-white rounded-2xl shadow-sm border border-gray-100 px-6 py-5 flex items-center gap-5 max-w-md w-full">
+      <div className="mt-8 parchment rounded-2xl px-6 py-5 flex items-center gap-5 max-w-md w-full">
         <div className="relative w-16 h-20 shrink-0 overflow-hidden">
           <svg viewBox="0 0 80 100" className="w-full h-full">
             {[10, 18, 26, 34].map((r, i) => (

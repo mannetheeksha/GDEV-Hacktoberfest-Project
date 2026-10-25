@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import DarkRoom from "../components/DarkRoom";
+import HiddenInput from "../components/HiddenInput";
 
 const SECRET_QUESTIONS = [
   "What dining hall did you eat at most?",
@@ -102,9 +103,6 @@ export default function WritePage() {
       secretAnswer: form.get("secretAnswer"),
     };
 
-    // The vault shows capsules for this wallet
-    localStorage.setItem("myWallet", String(draft.walletAddress).trim());
-
     // The sealing page picks this up and sends it to /api/seal
     sessionStorage.setItem("capsuleDraft", JSON.stringify(draft));
     router.push("/sealing");
@@ -143,8 +141,7 @@ export default function WritePage() {
               <input type="text" name="author" required maxLength={60} placeholder="e.g. Mihika Chand" className={INPUT} />
             </Field>
             <Field label="Solana wallet address" icon="👛" hint="Your graduation badge NFT is sent here. Copy it from Phantom.">
-              <input
-                type="text"
+              <HiddenInput
                 name="walletAddress"
                 required
                 pattern="[1-9A-HJ-NP-Za-km-z]{32,44}"

@@ -5,6 +5,7 @@ import Link from "next/link";
 import DarkRoom from "../components/DarkRoom";
 import YearEmblem, { type Year } from "../components/YearEmblem";
 import GraduationCountdown from "../components/GraduationCountdown";
+import HiddenInput from "../components/HiddenInput";
 
 type CapsuleSummary = { id: string; author: string; unlockDate: string; sealedAt: string };
 
@@ -35,7 +36,9 @@ export default function VaultPage() {
   useEffect(() => {
     setMounted(true);
     setSkipToGrad(sessionStorage.getItem("skipToGrad") === "true");
-    setWallet(localStorage.getItem("myWallet") || "");
+    // Signed in only for this browser tab: a new visit asks for the wallet again
+    setWallet(sessionStorage.getItem("vaultWallet") || "");
+    localStorage.removeItem("myWallet"); // forget addresses remembered by older versions
   }, []);
 
   // Your wallet is your identity: only load that wallet's capsules
@@ -47,15 +50,15 @@ export default function VaultPage() {
       .then(setCapsules);
   }, [wallet]);
 
-  function chooseWallet(e: React.FormEvent) {
+  function signIn(e: React.FormEvent) {
     e.preventDefault();
     const w = walletInput.trim();
-    localStorage.setItem("myWallet", w);
+    sessionStorage.setItem("vaultWallet", w);
     setWallet(w);
   }
 
-  function changeWallet() {
-    localStorage.removeItem("myWallet");
+  function signOut() {
+    sessionStorage.removeItem("vaultWallet");
     setWallet("");
     setWalletInput("");
     setCapsules(null);
@@ -116,8 +119,9 @@ export default function VaultPage() {
               <span className="text-white/70">
                 {capsules ? `${capsules.length} capsule${capsules.length === 1 ? "" : "s"}` : "Opening the vault..."} for{" "}
                 <span className="font-mono">{wallet.slice(0, 4)}...{wallet.slice(-4)}</span>{" "}
-                <button onClick={changeWallet} className="underline" style={{ color: "#f5d77a" }}>
-                  change
+                ·{" "}
+                <button onClick={signOut} className="underline" style={{ color: "#f5d77a" }}>
+                  Sign out
                 </button>
               </span>
               <button
@@ -137,17 +141,19 @@ export default function VaultPage() {
           )}
         </div>
 
-        {/* Ask whose vault this is */}
+        {/* Sign in: asked every new visit */}
         {mounted && !wallet && (
-          <form onSubmit={chooseWallet} className="max-w-md mx-auto rounded-3xl p-8 border-2 text-center" style={{ background: "#fffaf0", borderColor: "#FFD200", boxShadow: "0 0 60px rgba(255,190,90,0.25)" }}>
+          <form onSubmit={signIn} className="max-w-md mx-auto rounded-3xl p-8 border-2 text-center" style={{ background: "#fffaf0", borderColor: "#FFD200", boxShadow: "0 0 60px rgba(255,190,90,0.25)" }}>
             <div className="text-5xl mb-3">👛</div>
-            <h2 className="font-display font-bold text-gray-800 text-2xl mb-1">Your wallet is your key</h2>
-            <p className="text-sm text-gray-500 mb-4">Paste the Solana wallet address you sealed your capsules with.</p>
-            <input
-              type="text"
+            <h2 className="font-display font-bold text-gray-800 text-2xl mb-1">Sign in to your vault</h2>
+            <p className="text-sm text-gray-500 mb-4">Your wallet is your key. Enter the Solana wallet address you sealed your capsules with.</p>
+            <HiddenInput
               value={walletInput}
               onChange={(e) => setWalletInput(e.target.value)}
               required
+              autoFocus
+              pattern="[1-9A-HJ-NP-Za-km-z]{32,44}"
+              title="Enter a Solana wallet address (32–44 letters and numbers), e.g. from Phantom"
               placeholder="e.g. 7xKqP3..."
               className="w-full border border-gray-200 rounded-xl px-4 py-3 text-gray-800 bg-[#fffdf8] font-mono text-sm focus:outline-none focus:ring-2 focus:ring-[#FFD200]"
             />
@@ -156,7 +162,7 @@ export default function VaultPage() {
               className="w-full mt-4 py-3 rounded-full font-bold shadow-md transition-transform hover:scale-105"
               style={{ background: "#E21833", color: "white" }}
             >
-              Show my capsules
+              🔓 Open my vault
             </button>
           </form>
         )}

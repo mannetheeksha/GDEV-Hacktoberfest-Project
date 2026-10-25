@@ -51,7 +51,7 @@ type Capsule = {
 1. `/` — Landing: title, one-line pitch, "Write your capsule" button.
 2. `/write` — Form: name, wallet address, letter, semester notes, 3 photo upload sections (each: an image picker with a preview + a caption box; all optional), unlock date, secret question (dropdown of UMD questions or "Write my own") + answer. Button: "Seal my capsule".
 3. `/sealing` — Animated wax-seal / envelope closing. Calls `/api/seal`, then shows "Sealed on Solana" with an Explorer link, then a button to the vault.
-4. `/vault` — Your wallet is your identity: asks for a wallet address (remembered in localStorage, auto-set after sealing) and lists only that wallet's capsules. Locked: countdown to unlock date. Unlocked: "Open" button. Top-right: "⏩ Skip to Graduation" toggle (starts OFF; remembered only for the current tab via sessionStorage) that treats all as unlocked.
+4. `/vault` — Your wallet is your identity: every new visit asks you to sign in with a wallet address (kept only for the current tab in sessionStorage; "Sign out" clears it) and lists only that wallet's capsules. This does not prove ownership — see "Sign in with Phantom" stretch goal. Locked: countdown to unlock date. Unlocked: "Open" button. Top-right: "⏩ Skip to Graduation" toggle (starts OFF; remembered only for the current tab via sessionStorage) that treats all as unlocked.
 5. `/capsule/[id]` — Locked view asks the secret question → `/api/open`. Once unlocked: calls `/api/verify` → shows verified badge or "⚠️ tampered", reveals letter + notes + the uploaded photos with their captions, then calls `/api/mint-badge` and shows the badge image + Explorer link.
 
 ## API routes
