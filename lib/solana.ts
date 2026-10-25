@@ -50,6 +50,16 @@ export async function readMemo(signature: string): Promise<{ memo: string; time:
   return { memo, time: new Date(Number(tx.blockTime) * 1000) };
 }
 
+// True if the text is a real Solana address (catches typos and Ethereum 0x... addresses)
+export function isValidWallet(address: string): boolean {
+  try {
+    new PublicKey(address);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export function explorerTxUrl(signature: string): string {
   return `https://explorer.solana.com/tx/${signature}?cluster=devnet`;
 }

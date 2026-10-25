@@ -3,23 +3,45 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 
-import type { Capsule } from "@/lib/capsules";
+type CapsuleSummary = { id: string; author: string; unlockDate: string; sealedAt: string };
 
 export default function VaultPage() {
   const [skipToGrad, setSkipToGrad] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const [capsules, setCapsules] = useState<Capsule[] | null>(null);
+  const [capsules, setCapsules] = useState<CapsuleSummary[] | null>(null);
+  const [wallet, setWallet] = useState("");      // whose vault we're showing
+  const [walletInput, setWalletInput] = useState("");
 
   useEffect(() => {
     setMounted(true);
     setSkipToGrad(localStorage.getItem("skipToGrad") === "true");
-
-    fetch("/api/capsules")
-      .then((res) => res.json())
-      .then(setCapsules);
+    setWallet(localStorage.getItem("myWallet") || "");
   }, []);
 
-  function isLocked(cap: Capsule): boolean {
+  // Your wallet is your identity: only load that wallet's capsules
+  useEffect(() => {
+    if (!wallet) return;
+    setCapsules(null);
+    fetch(`/api/capsules?wallet=${encodeURIComponent(wallet)}`)
+      .then((res) => res.json())
+      .then(setCapsules);
+  }, [wallet]);
+
+  function chooseWallet(e: React.FormEvent) {
+    e.preventDefault();
+    const w = walletInput.trim();
+    localStorage.setItem("myWallet", w);
+    setWallet(w);
+  }
+
+  function changeWallet() {
+    localStorage.removeItem("myWallet");
+    setWallet("");
+    setWalletInput("");
+    setCapsules(null);
+  }
+
+  function isLocked(cap: CapsuleSummary): boolean {
     return new Date(cap.unlockDate).getTime() > Date.now();
   }
 
@@ -51,9 +73,15 @@ export default function VaultPage() {
           <div>
             <Link href="/" className="text-sm block mb-1" style={{ color: "#E21833" }}>← Home</Link>
             <h1 className="text-3xl font-bold" style={{ color: "#E21833" }}>The Vault 🏛️</h1>
-            <p className="text-gray-500 text-sm mt-1">
-              {capsules ? `${capsules.length} capsules sealed` : "Opening the vault..."}
-            </p>
+            {wallet && (
+              <p className="text-gray-500 text-sm mt-1">
+                {capsules ? `${capsules.length} capsule${capsules.length === 1 ? "" : "s"}` : "Opening the vault..."} for{" "}
+                <span className="font-mono">{wallet.slice(0, 4)}...{wallet.slice(-4)}</span>{" "}
+                <button onClick={changeWallet} className="underline" style={{ color: "#E21833" }}>
+                  change
+                </button>
+              </p>
+            )}
           </div>
           <button
             onClick={toggleSkip}
@@ -69,12 +97,36 @@ export default function VaultPage() {
           </button>
         </div>
 
+        {/* Ask whose vault this is */}
+        {mounted && !wallet && (
+          <form onSubmit={chooseWallet} className="bg-white rounded-2xl p-8 shadow-sm border-2 text-center" style={{ borderColor: "#FFD200" }}>
+            <div className="text-5xl mb-3">👛</div>
+            <h2 className="font-bold text-gray-800 text-lg mb-1">Your wallet is your key</h2>
+            <p className="text-sm text-gray-500 mb-4">Paste the Solana wallet address you sealed your capsules with.</p>
+            <input
+              type="text"
+              value={walletInput}
+              onChange={(e) => setWalletInput(e.target.value)}
+              required
+              placeholder="e.g. 7xKqP3..."
+              className="w-full border border-gray-200 rounded-xl px-4 py-3 text-gray-800 font-mono text-sm focus:outline-none focus:ring-2"
+            />
+            <button
+              type="submit"
+              className="w-full mt-4 py-3 rounded-full font-bold shadow-md transition-transform hover:scale-105"
+              style={{ background: "#E21833", color: "white" }}
+            >
+              Show my capsules
+            </button>
+          </form>
+        )}
+
         {/* Capsule list */}
         <div className="flex flex-col gap-4">
           {capsules?.length === 0 && (
             <div className="bg-white rounded-2xl p-10 text-center text-gray-500 border border-gray-100">
               <div className="text-5xl mb-3">🐢</div>
-              The vault is empty. Testudo is waiting for the first capsule!
+              No capsules for this wallet yet. Testudo is waiting for your first one!
             </div>
           )}
           {capsules?.map((cap) => {

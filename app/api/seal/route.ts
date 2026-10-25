@@ -1,12 +1,16 @@
 import crypto from "crypto";
 import { saveCapsule, hashAnswer, hashCapsule, type Capsule } from "@/lib/capsules";
-import { sendMemo, explorerTxUrl } from "@/lib/solana";
+import { sendMemo, explorerTxUrl, isValidWallet } from "@/lib/solana";
 
 export async function POST(request: Request) {
   const body = await request.json();
 
   if (!body.author || !body.walletAddress || !body.letter) {
     return Response.json({ error: "Name, wallet address and letter are required" }, { status: 400 });
+  }
+  body.walletAddress = body.walletAddress.trim();
+  if (!isValidWallet(body.walletAddress)) {
+    return Response.json({ error: "That doesn't look like a Solana wallet address — copy it from Phantom." }, { status: 400 });
   }
   if (!body.secretQuestion?.trim() || !body.secretAnswer?.trim()) {
     return Response.json({ error: "Please choose a secret question and answer it" }, { status: 400 });

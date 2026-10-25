@@ -73,6 +73,9 @@ export default function WritePage() {
       secretAnswer: form.get("secretAnswer"),
     };
 
+    // The vault shows capsules for this wallet
+    localStorage.setItem("myWallet", String(draft.walletAddress).trim());
+
     // The sealing page picks this up and sends it to /api/seal
     sessionStorage.setItem("capsuleDraft", JSON.stringify(draft));
     router.push("/sealing");

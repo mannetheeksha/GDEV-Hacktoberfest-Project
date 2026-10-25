@@ -49,11 +49,11 @@ type Capsule = {
 1. `/` — Landing: title, one-line pitch, "Write your capsule" button.
 2. `/write` — Form: name, wallet address, letter, semester notes, 3 photo upload sections (each: an image picker with a preview + a caption box; all optional), unlock date, secret question (dropdown of UMD questions or "Write my own") + answer. Button: "Seal my capsule".
 3. `/sealing` — Animated wax-seal / envelope closing. Calls `/api/seal`, then shows "Sealed on Solana" with an Explorer link, then a button to the vault.
-4. `/vault` — List of capsules. Locked: countdown to unlock date. Unlocked: "Open" button. Top-right: "⏩ Skip to Graduation" toggle (stored in localStorage) that treats all as unlocked.
+4. `/vault` — Your wallet is your identity: asks for a wallet address (remembered in localStorage, auto-set after sealing) and lists only that wallet's capsules. Locked: countdown to unlock date. Unlocked: "Open" button. Top-right: "⏩ Skip to Graduation" toggle (stored in localStorage) that treats all as unlocked.
 5. `/capsule/[id]` — Locked view asks the secret question → `/api/open`. Once unlocked: calls `/api/verify` → shows verified badge or "⚠️ tampered", reveals letter + notes + the uploaded photos with their captions, then calls `/api/mint-badge` and shows the badge image + Explorer link.
 
 ## API routes
-- `GET /api/capsules` → id, author, unlockDate, sealedAt of every capsule, newest first (used by `/vault`; never letters)
+- `GET /api/capsules?wallet=<address>` → id, author, unlockDate, sealedAt of that wallet's capsules, newest first (used by `/vault`; never letters)
 - `POST /api/open` → `{ id, answer }` → full capsule (without `answerHash`) if the answer is right, else 401
 - `GET /api/badge/<year>` → the badge SVG for that class year (design: Testudo peeking out of an envelope, drawn in `lib/badge.ts`)
 - `POST /api/upload` → form-data with one `file` → saves it to `public/uploads/` with a random name → `{ url }`
@@ -80,3 +80,4 @@ type Capsule = {
 
 ## Stretch goals (only if time is left after step 8)
 - Face ID with FACEIO (fio.js, free plan or trial): scan face on seal, scan again on open. Keep the secret question as a "Can't scan?" backup. Needs the FACEIO app Public ID.
+- "Sign in with Phantom": prove wallet ownership with a signature instead of typing the address (needs wallet-connect code).
