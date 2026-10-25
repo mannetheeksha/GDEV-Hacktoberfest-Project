@@ -18,7 +18,7 @@ export default function OpenCapsule({
   const [error, setError] = useState("");
   const [checking, setChecking] = useState(false);
   const [capsule, setCapsule] = useState<OpenedCapsule | null>(null);
-  const verified = true; // Step 6: /api/verify will check this against Solana
+  const [check, setCheck] = useState<{ verified?: boolean; sealedAt?: string; reason?: string; error?: string } | null>(null);
 
   async function tryOpen(answerToSend: string) {
     setChecking(true);
@@ -36,6 +36,19 @@ export default function OpenCapsule({
     }
     setCapsule(data);
   }
+
+  // Once unlocked, re-check the capsule's fingerprint against Solana
+  useEffect(() => {
+    if (!capsule) return;
+    fetch("/api/verify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id }),
+    })
+      .then((res) => res.json())
+      .then(setCheck)
+      .catch(() => setCheck({ error: "Couldn't reach Solana — refresh to try again." }));
+  }, [capsule, id]);
 
   // Older capsules have no secret question — open them straight away
   useEffect(() => {
@@ -105,13 +118,35 @@ export default function OpenCapsule({
         </Link>
 
         {/* Verification banner */}
-        {verified ? (
+        {!check ? (
+          <div
+            className="rounded-2xl px-5 py-3 mb-6 flex items-center gap-3 text-sm font-semibold animate-pulse"
+            style={{ background: "#fff7cc", color: "#92400e" }}
+          >
+            <span className="text-lg">🔍</span>
+            Asking Solana if this capsule is untouched...
+          </div>
+        ) : check.verified ? (
           <div
             className="rounded-2xl px-5 py-3 mb-6 flex items-center gap-3 text-sm font-semibold"
             style={{ background: "#dcfce7", color: "#15803d" }}
           >
             <span className="text-lg">✅</span>
-            Verified on Solana — Unedited since {new Date(capsule.sealedAt).toLocaleDateString()}
+            <span>
+              Unedited since {new Date(check.sealedAt!).toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" })}
+              {" "}·{" "}
+              <a href={`https://explorer.solana.com/tx/${capsule.sealTx}?cluster=devnet`} target="_blank" rel="noopener noreferrer" className="underline">
+                proof on Solana ↗
+              </a>
+            </span>
+          </div>
+        ) : check.error ? (
+          <div
+            className="rounded-2xl px-5 py-3 mb-6 flex items-center gap-3 text-sm font-semibold"
+            style={{ background: "#f3f4f6", color: "#4b5563" }}
+          >
+            <span className="text-lg">📡</span>
+            {check.error}
           </div>
         ) : (
           <div
@@ -119,7 +154,7 @@ export default function OpenCapsule({
             style={{ background: "#fef2f2", color: "#dc2626" }}
           >
             <span className="text-lg">⚠️</span>
-            Hash mismatch — this capsule may have been tampered with
+            Tampered! {check.reason}
           </div>
         )}
 

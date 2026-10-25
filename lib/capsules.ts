@@ -22,6 +22,11 @@ export type Capsule = {
 // What the browser is allowed to see once the capsule is unlocked
 export type OpenedCapsule = Omit<Capsule, "answerHash">;
 
+// The capsule's fingerprint: used when sealing AND when verifying, so they always match
+export function hashCapsule(letter: string, notes: string): string {
+  return crypto.createHash("sha256").update(letter + notes).digest("hex");
+}
+
 // "  The Diner " and "the diner" count as the same answer
 export function hashAnswer(answer: string): string {
   const cleaned = answer.trim().toLowerCase().replace(/\s+/g, " ");

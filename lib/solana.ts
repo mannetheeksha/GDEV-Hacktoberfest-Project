@@ -36,6 +36,20 @@ export async function sendMemo(text: string): Promise<string> {
   return sendAndConfirmTransaction(connection, tx, [wallet]);
 }
 
+// Reads a transaction back from Solana → its memo text and when it happened
+export async function readMemo(signature: string): Promise<{ memo: string; time: Date } | null> {
+  const tx = await connection.getTransaction(signature, {
+    maxSupportedTransactionVersion: 0,
+    commitment: "confirmed",
+  });
+  if (!tx || tx.meta?.err || !tx.blockTime) return null;
+
+  // The Memo program logs: Program log: Memo (len 77): "TERP-CAPSULE:abc..."
+  const log = tx.meta?.logMessages?.find((l) => l.startsWith("Program log: Memo"));
+  const memo = log?.match(/"(.*)"/)?.[1] ?? "";
+  return { memo, time: new Date(Number(tx.blockTime) * 1000) };
+}
+
 export function explorerTxUrl(signature: string): string {
   return `https://explorer.solana.com/tx/${signature}?cluster=devnet`;
 }

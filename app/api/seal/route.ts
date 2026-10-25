@@ -1,5 +1,5 @@
 import crypto from "crypto";
-import { saveCapsule, hashAnswer, type Capsule } from "@/lib/capsules";
+import { saveCapsule, hashAnswer, hashCapsule, type Capsule } from "@/lib/capsules";
 import { sendMemo, explorerTxUrl } from "@/lib/solana";
 
 export async function POST(request: Request) {
@@ -13,7 +13,7 @@ export async function POST(request: Request) {
   }
 
   const notes = body.notes || "";
-  const hash = crypto.createHash("sha256").update(body.letter + notes).digest("hex");
+  const hash = hashCapsule(body.letter, notes);
 
   // Record the hash on Solana so nobody can edit or backdate the capsule
   let sealTx: string;
